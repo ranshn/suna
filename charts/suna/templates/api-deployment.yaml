@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "suna.fullname" . }}-api
+  labels:
+    {{- include "suna.labels" . | nindent 4 }}
+    app.kubernetes.io/component: api
+spec:
+  replicas: {{ .Values.backend.api.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "suna.api.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "suna.api.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- include "suna.imagePullSecrets" . | nindent 6 }}
+      containers:
+        - name: api
+          image: "{{ .Values.backend.image.repository }}:{{ .Values.backend.image.tag }}"
+          imagePullPolicy: {{ .Values.backend.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 8000
+              protocol: TCP
+          env:
+            {{- range $key, $value := .Values.backend.env }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+          envFrom:
+            {{- if .Values.backend.secrets }}
+            - secretRef:
+                name: {{ include "suna.fullname" . }}-env
+            {{- end }}
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.backend.api.livenessPath }}
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.backend.api.readinessPath }}
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+          resources:
+            {{- toYaml .Values.backend.api.resources | nindent 12 }}
