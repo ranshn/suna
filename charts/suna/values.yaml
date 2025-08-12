@@ -1,0 +1,121 @@
+# Default values for suna.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# Global configuration
+global:
+  nameOverride: ""
+  fullnameOverride: ""
+
+# Image pull secrets for private registries
+imagePullSecrets: []
+
+# Backend configuration
+backend:
+  image:
+    repository: ghcr.io/kortix-ai/suna/suna-backend
+    tag: latest
+    pullPolicy: IfNotPresent
+
+  # Non-sensitive environment variables
+  env:
+    ENV_MODE: production
+    REDIS_HOST: redis
+    REDIS_PORT: 6379
+    REDIS_SSL: "false"
+    RABBITMQ_HOST: rabbitmq
+    RABBITMQ_PORT: 5672
+    LOG_LEVEL: INFO
+
+  # Sensitive environment variables (populate with your values)
+  secrets: {}
+    # SUPABASE_URL: ""
+    # SUPABASE_ANON_KEY: ""
+    # SUPABASE_SERVICE_ROLE_KEY: ""
+    # STRIPE_SECRET_KEY: ""
+    # OPENAI_API_KEY: ""
+    # ANTHROPIC_API_KEY: ""
+    # TAVILY_API_KEY: ""
+    # FIRECRAWL_API_KEY: ""
+    # DAYTONA_API_KEY: ""
+    # MAILTRAP_API_TOKEN: ""
+    # SENTRY_DSN: ""
+    # LANGFUSE_PUBLIC_KEY: ""
+    # LANGFUSE_SECRET_KEY: ""
+    # AWS_ACCESS_KEY_ID: ""
+    # AWS_SECRET_ACCESS_KEY: ""
+    # AWS_REGION_NAME: ""
+    # MODEL_TO_USE: ""
+
+  # API service configuration
+  api:
+    replicaCount: 1
+    service:
+      type: ClusterIP
+      port: 8000
+    resources: {}
+    livenessPath: /api/health
+    readinessPath: /api/health
+
+  # Worker service configuration
+  worker:
+    replicaCount: 1
+    command: ["python", "-m", "dramatiq", "--processes", "4", "--threads", "4", "run_agent_background"]
+    resources: {}
+
+# Redis configuration
+redis:
+  enabled: true
+  image: redis:7-alpine
+  persistence:
+    enabled: true
+    size: 8Gi
+    storageClass: ""
+  config:
+    timeout: 120
+    extraArgs:
+      - "--appendonly"
+      - "yes"
+      - "--bind"
+      - "0.0.0.0"
+      - "--protected-mode"
+      - "no"
+      - "--maxmemory"
+      - "8gb"
+      - "--maxmemory-policy"
+      - "allkeys-lru"
+  resources: {}
+
+# RabbitMQ configuration
+rabbitmq:
+  enabled: true
+  image: rabbitmq:3.13
+  persistence:
+    enabled: true
+    size: 8Gi
+    storageClass: ""
+  management:
+    enabled: false
+  resources: {}
+
+# Frontend configuration (disabled by default)
+frontend:
+  enabled: false
+  image:
+    repository: your-registry/suna-frontend
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 3000
+  env: {}
+  resources: {}
+
+# Ingress configuration
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts:
+    - host: suna.example.com
+  tls: []
