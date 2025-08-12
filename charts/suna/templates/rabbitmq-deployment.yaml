@@ -1,0 +1,66 @@
+{{- if .Values.rabbitmq.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "suna.fullname" . }}-rabbitmq
+  labels:
+    {{- include "suna.labels" . | nindent 4 }}
+    app.kubernetes.io/component: rabbitmq
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "suna.rabbitmq.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "suna.rabbitmq.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- include "suna.imagePullSecrets" . | nindent 6 }}
+      containers:
+        - name: rabbitmq
+          image: {{ .Values.rabbitmq.image }}
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: amqp
+              containerPort: 5672
+              protocol: TCP
+            {{- if .Values.rabbitmq.management.enabled }}
+            - name: management
+              containerPort: 15672
+              protocol: TCP
+            {{- end }}
+          volumeMounts:
+            - name: rabbitmq-data
+              mountPath: /var/lib/rabbitmq
+          livenessProbe:
+            exec:
+              command:
+                - rabbitmq-diagnostics
+                - -q
+                - ping
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 3
+          readinessProbe:
+            exec:
+              command:
+                - rabbitmq-diagnostics
+                - -q
+                - ping
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          resources:
+            {{- toYaml .Values.rabbitmq.resources | nindent 12 }}
+      volumes:
+        - name: rabbitmq-data
+          {{- if .Values.rabbitmq.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ include "suna.fullname" . }}-rabbitmq
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+{{- end }}
