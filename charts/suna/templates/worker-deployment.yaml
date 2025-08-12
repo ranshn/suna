@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "suna.fullname" . }}-worker
+  labels:
+    {{- include "suna.labels" . | nindent 4 }}
+    app.kubernetes.io/component: worker
+spec:
+  replicas: {{ .Values.backend.worker.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "suna.worker.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "suna.worker.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- include "suna.imagePullSecrets" . | nindent 6 }}
+      containers:
+        - name: worker
+          image: "{{ .Values.backend.image.repository }}:{{ .Values.backend.image.tag }}"
+          imagePullPolicy: {{ .Values.backend.image.pullPolicy }}
+          command: {{ toJson .Values.backend.worker.command }}
+          env:
+            {{- range $key, $value := .Values.backend.env }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+          envFrom:
+            {{- if .Values.backend.secrets }}
+            - secretRef:
+                name: {{ include "suna.fullname" . }}-env
+            {{- end }}
+          resources:
+            {{- toYaml .Values.backend.worker.resources | nindent 12 }}
