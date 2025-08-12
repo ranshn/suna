@@ -1,0 +1,18 @@
+apiVersion: v2
+name: suna
+description: Suna self-hosted - Open Source Generalist AI Agent
+type: application
+version: 0.1.0
+appVersion: 0.1.0
+home: https://github.com/kortix-ai/suna
+sources:
+  - https://github.com/kortix-ai/suna
+maintainers:
+  - name: Kortix AI
+    url: https://kortix.ai
+keywords:
+  - ai
+  - agent
+  - assistant
+  - automation
+  - llm
